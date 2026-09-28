@@ -494,7 +494,7 @@ ${userCustomNotes ? `User artistic request: ${userCustomNotes}` : ''}`;
         const videoRef = useRef(null);
         const canvasRef = useRef(null);
         const [stream, setStream] = useState(null);
-        const [facingMode, setFacingMode] = useState('user');
+        const [facingMode, setFacingMode] = useState('environment');
         const [cameraError, setCameraError] = useState(null);
 
         useEffect(() => {
