@@ -586,6 +586,15 @@ ${userCustomNotes ? `User artistic request: ${userCustomNotes}` : ''}`;
           ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
           const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
           const base64 = dataUrl.split(',')[1];
+
+          // Automatically save original picture into device storage
+          const downloadLink = document.createElement('a');
+          downloadLink.href = dataUrl;
+          downloadLink.download = `original-photo-${Date.now()}.jpg`;
+          document.body.appendChild(downloadLink);
+          downloadLink.click();
+          document.body.removeChild(downloadLink);
+
           onCapture({
             base64,
             mimeType: 'image/jpeg',
