@@ -1,0 +1,1299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Artify AI Studio - Japanese Anime Style Transfer</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              brand: {
+                50: '#f0f7ff',
+                100: '#e0effe',
+                500: '#3b82f6',
+                600: '#2563eb',
+                700: '#1d4ed8',
+                900: '#1e3a8a',
+              },
+              sakura: {
+                400: '#f472b6',
+                500: '#ec4899',
+                600: '#db2777',
+              },
+              amber: {
+                400: '#fbbf24',
+                500: '#f59e0b',
+                600: '#d97706',
+              }
+            },
+            animation: {
+              'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+              'shimmer': 'shimmer 2s infinite linear',
+              'float': 'float 6s ease-in-out infinite',
+            },
+            keyframes: {
+              shimmer: {
+                '0%': { backgroundPosition: '-200% 0' },
+                '100%': { backgroundPosition: '200% 0' },
+              },
+              float: {
+                '0%, 100%': { transform: 'translateY(0px)' },
+                '50%': { transform: 'translateY(-8px)' },
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <!-- React, ReactDOM & Babel -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,800;1,600&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+      body {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+      }
+      .font-heading {
+        font-family: 'Outfit', 'Playfair Display', sans-serif;
+      }
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: rgba(0,0,0,0.05);
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: rgba(156, 163, 175, 0.5);
+        border-radius: 4px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: rgba(107, 114, 128, 0.8);
+      }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen selection:bg-pink-500 selection:text-white overflow-x-hidden">
+    <div id="root"></div>
+    <script type="text/babel">
+      const { useState, useEffect, useRef, useMemo } = React;
+
+      // --- 5 ICONIC JAPANESE ANIMATION STYLES DATA ---
+      const ANIME_STYLES_DATA = [
+        {
+          id: 'studio-ghibli',
+          title: 'Studio Ghibli Aesthetic',
+          artist: 'Hayao Miyazaki / Studio Ghibli',
+          movement: 'Whimsical / Hand-Drawn',
+          year: '1985–Present',
+          medium: 'Painterly Cel & Watercolor',
+          location: 'Tokyo, Japan',
+          description: 'Soft painterly watercolor backgrounds, vibrant lush green landscapes, nostalgic hand-drawn warmth, and whimsical fairytale charm.',
+          stylePrompt: 'Whimsical Studio Ghibli hand-drawn anime aesthetic, soft painterly watercolor background, vibrant lush green foliage, warm golden natural sunlight, nostalgic fairytale charm, hand-painted anime scenery.',
+          bgGradient: 'from-emerald-950 via-teal-900 to-amber-950',
+          accentColor: '#10b981',
+          previewImg: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600&auto=format&fit=crop&q=80'
+        },
+        {
+          id: 'makoto-shinkai',
+          title: 'Makoto Shinkai Cinematic',
+          artist: 'Makoto Shinkai (Your Name)',
+          movement: 'Hyper-Realistic Anime',
+          year: '2016–Present',
+          medium: 'Digital Anime & Volumetric Light',
+          location: 'Tokyo, Japan',
+          description: 'Hyper-detailed scenic anime backgrounds, dramatic glowing lens flares, breathtaking twilight skies, and glowing cloud reflections.',
+          stylePrompt: 'Hyper-detailed Makoto Shinkai anime style, dramatic twilight sky with vibrant purple and golden orange clouds, glowing lens flares, crystalline volumetric sunlight, photorealistic anime atmosphere, emotional cinematic lighting.',
+          bgGradient: 'from-indigo-950 via-purple-900 to-pink-950',
+          accentColor: '#f472b6',
+          previewImg: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&auto=format&fit=crop&q=80'
+        },
+        {
+          id: 'retro-cyberpunk-80s',
+          title: '80s Retro Cyberpunk Cel',
+          artist: 'Katsuhiro Otomo / Mamoru Oshii',
+          movement: 'Vintage Cel Animation',
+          year: '1988–1995',
+          medium: 'Hand-Drawn Cel & Film Grain',
+          location: 'Neo-Tokyo',
+          description: 'Dark gritty neon-lit metropolis, classic hand-painted cel animation shadows, fine film grain, retro cyberpunk aesthetic, and rich dark line art.',
+          stylePrompt: 'Classic 1980s retro cyberpunk anime cel animation style, dark gritty neon city glows, bold hand-inked line art, dramatic cel shading, subtle retro film grain, Akira and Ghost in the Shell visual tone.',
+          bgGradient: 'from-slate-950 via-rose-950 to-blue-950',
+          accentColor: '#38bdf8',
+          previewImg: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=600&auto=format&fit=crop&q=80'
+        },
+        {
+          id: 'kyoani-soft-glow',
+          title: 'Kyoto Animation Soft Glow',
+          artist: 'Kyoto Animation (KyoAni)',
+          movement: 'Slice of Life / Soft Glow',
+          year: '2006–Present',
+          medium: 'Soft Digital Animation',
+          location: 'Kyoto, Japan',
+          description: 'Delicate illuminated eye details, soft dreamlike rim lighting, pastel color palettes, pristine clean line art, and tender expressive depth.',
+          stylePrompt: 'Kyoto Animation (KyoAni) soft digital anime style, delicate rim lighting with golden soft bokeh, luminous intricate eye highlights, smooth soft pastel color palette, clean elegant anime lines, high polish emotional visual tone.',
+          bgGradient: 'from-pink-950 via-fuchsia-950 to-slate-900',
+          accentColor: '#ec4899',
+          previewImg: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600&auto=format&fit=crop&q=80'
+        },
+        {
+          id: 'studio-trigger-action',
+          title: 'Studio Trigger High Energy',
+          artist: 'Hiroyuki Imaishi (Trigger / Gainax)',
+          movement: 'High-Energy Action',
+          year: '2011–Present',
+          medium: 'Dynamic Graphic Anime',
+          location: 'Tokyo, Japan',
+          description: 'Sharp angular lines, high-contrast neon accents, explosive dynamic perspective, dramatic stylized shadows, and bold graphic impact.',
+          stylePrompt: 'High-energy Studio Trigger action anime style, sharp angular graphic lines, intense vivid neon colors, dynamic high-contrast cel shading, kinetic perspective, stylized shadow facets, energetic Cyberpunk Edgerunners and Kill la Kill graphic aesthetic.',
+          bgGradient: 'from-red-950 via-yellow-950 to-slate-950',
+          accentColor: '#f59e0b',
+          previewImg: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=600&auto=format&fit=crop&q=80'
+        }
+      ];
+
+      const SAMPLE_PHOTOS = [
+        {
+          id: 'sample-portrait',
+          name: 'Classic Portrait',
+          url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&auto=format&fit=crop&q=80'
+        },
+        {
+          id: 'sample-landscape',
+          name: 'Mountain Lake',
+          url: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&auto=format&fit=crop&q=80'
+        },
+        {
+          id: 'sample-city',
+          name: 'Tokyo Night Street',
+          url: 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?w=800&auto=format&fit=crop&q=80'
+        },
+        {
+          id: 'sample-pet',
+          name: 'Playful Dog',
+          url: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=800&auto=format&fit=crop&q=80'
+        }
+      ];
+
+      async function transformImageWithGemini(base64Data, mimeType, selectedArtwork, userCustomNotes = '', customApiKey = '') {
+        const prompt = `Act as a world-class Japanese anime illustrator and animation artist.
+Transform this source photo completely into the signature anime visual style of "${selectedArtwork.title}" created by ${selectedArtwork.artist}.
+Key Style Guidelines to Apply:
+1. Re-render all visual elements of the original photo into authentic Japanese animation artwork using ${selectedArtwork.artist}'s visual characteristics: ${selectedArtwork.stylePrompt}.
+2. Retain the core subject structure, pose, composition, and perspective of the original photo, but translate every detail into crisp anime lines, expressive shading, lighting, and vibrant anime color palette.
+3. Ensure the result looks like a high-budget feature film screen grab or artwork from ${selectedArtwork.title}.
+${userCustomNotes ? `User artistic request: ${userCustomNotes}` : ''}`;
+
+        const payload = {
+          contents: [
+            {
+              role: 'user',
+              parts: [
+                { text: prompt },
+                {
+                  inlineData: {
+                    mimeType: mimeType,
+                    data: base64Data
+                  }
+                }
+              ]
+            }
+          ],
+          generationConfig: {
+            responseModalities: ['TEXT', 'IMAGE']
+          }
+        };
+
+        const apiKey = customApiKey || localStorage.getItem('artify_gemini_api_key') || "";
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image:generateContent?key=${apiKey}`;
+
+        let attempts = 0;
+        const maxAttempts = 4;
+        let delayMs = 1500;
+
+        while (attempts < maxAttempts) {
+          try {
+            const response = await fetch(apiUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+              const errText = await response.text();
+              throw new Error(`Gemini API Error (${response.status}): ${errText}`);
+            }
+
+            const result = await response.json();
+            const candidate = result?.candidates?.[0];
+            if (!candidate) {
+              throw new Error("No candidate returned from Gemini model.");
+            }
+
+            // Find image inlineData in response
+            const imagePart = candidate.content?.parts?.find(p => p.inlineData);
+            
+            if (imagePart && imagePart.inlineData?.data) {
+              const resMime = imagePart.inlineData.mimeType || 'image/png';
+              return `data:${resMime};base64,${imagePart.inlineData.data}`;
+            }
+
+            // Check if text was returned explaining safety block or refusal
+            const textPart = candidate.content?.parts?.find(p => p.text);
+            if (textPart?.text) {
+              throw new Error(`Model Response: ${textPart.text}`);
+            }
+
+            throw new Error("The model did not return a valid stylized image.");
+          } catch (error) {
+            attempts++;
+            if (attempts >= maxAttempts) {
+              throw error;
+            }
+            await new Promise(res => setTimeout(res, delayMs));
+            delayMs *= 2;
+          }
+        }
+      }
+
+      // Convert URL image to Base64
+      async function imageUrlToBase64(url) {
+        const response = await fetch(url);
+        const blob = await response.blob();
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const dataUrl = reader.result;
+            const commaIdx = dataUrl.indexOf(',');
+            const base64 = dataUrl.substring(commaIdx + 1);
+            resolve({ base64, mimeType: blob.type || 'image/jpeg', dataUrl });
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+      }
+
+      function Header({ activeCount, hasCustomKey, onOpenKeyModal }) {
+        return (
+          <header className="sticky top-0 z-40 w-full border-b border-slate-800/80 bg-slate-950/90 backdrop-blur-md px-4 lg:px-8 py-3.5 transition-all">
+            <div className="max-w-7xl mx-auto flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-pink-500 via-purple-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-pink-500/20 ring-1 ring-white/20">
+                  <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-23" />
+                  </svg>
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold bg-gradient-to-r from-pink-300 via-purple-200 to-white bg-clip-text text-transparent font-heading flex items-center">
+                    Artify <span className="text-pink-400 font-sans text-xs uppercase px-2.5 py-0.5 rounded-full bg-pink-500/10 border border-pink-500/30 ml-2 font-semibold">Anime Studio</span>
+                  </h1>
+                  <p className="text-xs text-slate-400">Japanese Animation Style Transfer with Gemini 3.1</p>
+                </div>
+              </div>
+
+              {/* Desktop Menu Options */}
+              <div className="hidden md:flex items-center space-x-3 text-xs">
+                {/* API Status Pill */}
+                <div className={`flex items-center space-x-2 px-3 py-1.5 rounded-full border ${
+                  hasCustomKey 
+                    ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-300' 
+                    : 'bg-amber-950/50 border-amber-500/30 text-amber-300'
+                }`}>
+                  <span className={`w-2 h-2 rounded-full ${hasCustomKey ? 'bg-emerald-400' : 'bg-amber-400'} animate-pulse`}></span>
+                  <span className="font-medium">{hasCustomKey ? 'API Key Saved' : 'Using Default Key / Required'}</span>
+                </div>
+
+                {/* API Key Menu Button */}
+                <button
+                  onClick={onOpenKeyModal}
+                  className="bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-pink-400/80 text-slate-200 px-3.5 py-2 rounded-xl font-medium transition flex items-center space-x-2 shadow-sm group"
+                >
+                  <svg className="w-4 h-4 text-pink-400 group-hover:scale-110 transition duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 0121 9z" />
+                  </svg>
+                  <span>API Key Menu</span>
+                  {hasCustomKey && (
+                    <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+                  )}
+                </button>
+
+                <a 
+                  href="https://aistudio.google.com/app/apikey" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="bg-pink-500/10 hover:bg-pink-500/20 border border-pink-500/30 text-pink-300 px-3 py-2 rounded-xl font-medium transition flex items-center space-x-1.5"
+                >
+                  <span>Get Free Key</span>
+                  <svg className="w-3.5 h-3.5 text-pink-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </a>
+              </div>
+
+              {/* Mobile Menu Toggle */}
+              <div className="md:hidden flex items-center space-x-2">
+                <button
+                  onClick={onOpenKeyModal}
+                  className="bg-pink-500/10 border border-pink-500/30 text-pink-300 p-2 rounded-lg text-xs font-semibold flex items-center space-x-1"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 0121 9z" />
+                  </svg>
+                  <span>Key</span>
+                </button>
+              </div>
+            </div>
+          </header>
+        );
+      }
+
+      function ApiKeyModal({ isOpen, onClose, apiKey, onSaveKey, onClearKey }) {
+        const [inputValue, setInputValue] = useState(apiKey || '');
+        const [showKey, setShowKey] = useState(false);
+        const [saveStatus, setSaveStatus] = useState(null);
+
+        useEffect(() => {
+          setInputValue(apiKey || '');
+          setSaveStatus(null);
+        }, [apiKey, isOpen]);
+
+        if (!isOpen) return null;
+
+        const handleSubmit = (e) => {
+          e.preventDefault();
+          onSaveKey(inputValue.trim());
+          onClose();
+        };
+
+        const handleClear = () => {
+          setInputValue('');
+          onClearKey();
+          setSaveStatus('Saved API key cleared from browser.');
+          setTimeout(() => setSaveStatus(null), 3000);
+        };
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-md p-6 shadow-2xl relative text-slate-100">
+              <button 
+                onClick={onClose}
+                className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-pink-500/20 border border-pink-500/40 text-pink-400 flex items-center justify-center shadow-inner">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 0121 9z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white">Google Gemini API Key</h3>
+                  <p className="text-xs text-slate-400">Configured & saved directly in your browser</p>
+                </div>
+              </div>
+
+              {saveStatus && (
+                <div className="mb-4 p-3 bg-emerald-950/80 border border-emerald-500/50 rounded-xl text-emerald-300 text-xs flex items-center space-x-2">
+                  <svg className="w-4 h-4 text-emerald-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span>{saveStatus}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <div className="flex justify-between items-center mb-1.5">
+                    <label className="text-xs font-semibold text-slate-300">
+                      Enter your Gemini API Key
+                    </label>
+                    <span className="text-[10px] text-slate-400 font-mono">
+                      {apiKey ? 'Status: Key Saved' : 'Status: Not Set'}
+                    </span>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type={showKey ? "text" : "password"}
+                      value={inputValue}
+                      onChange={(e) => setInputValue(e.target.value)}
+                      placeholder="AIzaSy..."
+                      className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 pr-14 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-pink-400 focus:ring-1 focus:ring-pink-400 font-mono"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowKey(!showKey)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-pink-300 text-xs px-1 py-0.5 font-medium"
+                    >
+                      {showKey ? "Hide" : "Show"}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="bg-slate-800/60 border border-slate-700/50 rounded-xl p-3 text-xs text-slate-300 space-y-1.5">
+                  <div className="font-semibold text-pink-300 flex items-center space-x-1.5">
+                    <svg className="w-4 h-4 text-pink-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 002-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                    <span>Browser Local Storage Persistence</span>
+                  </div>
+                  <p className="text-slate-400 text-[11px] leading-relaxed">
+                    Your key is saved in your browser's <code className="text-pink-300 bg-slate-900 px-1 py-0.5 rounded">localStorage</code>. It remains saved between browser refreshes and sessions.
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-between text-xs">
+                  <a 
+                    href="https://aistudio.google.com/app/apikey" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-pink-400 hover:text-pink-300 underline font-medium flex items-center space-x-1"
+                  >
+                    <span>Get a free Gemini key at Google AI Studio</span>
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                  </a>
+                </div>
+
+                <div className="flex items-center space-x-2 pt-2">
+                  <button
+                    type="submit"
+                    className="flex-1 bg-pink-500 hover:bg-pink-400 text-slate-950 font-bold py-2.5 px-4 rounded-xl text-xs transition shadow-lg shadow-pink-500/20"
+                  >
+                    Save API Key
+                  </button>
+                  {apiKey && (
+                    <button
+                      type="button"
+                      onClick={handleClear}
+                      className="bg-slate-800 hover:bg-rose-950/80 hover:text-rose-300 border border-slate-700 hover:border-rose-700/60 text-slate-300 font-semibold py-2.5 px-3 rounded-xl text-xs transition"
+                    >
+                      Clear Key
+                    </button>
+                  )}
+                </div>
+              </form>
+            </div>
+          </div>
+        );
+      }
+
+      function CameraModal({ isOpen, onClose, onCapture }) {
+        const videoRef = useRef(null);
+        const canvasRef = useRef(null);
+        const [stream, setStream] = useState(null);
+        const [facingMode, setFacingMode] = useState('user');
+        const [cameraError, setCameraError] = useState(null);
+
+        useEffect(() => {
+          if (!isOpen) {
+            stopCamera();
+            return;
+          }
+          startCamera(facingMode);
+          return () => stopCamera();
+        }, [isOpen, facingMode]);
+
+        const startCamera = async (mode) => {
+          setCameraError(null);
+          
+          if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            setCameraError("Camera access is not supported or is blocked by your browser/iframe sandbox.");
+            return;
+          }
+
+          try {
+            if (stream) {
+              stream.getTracks().forEach(t => t.stop());
+            }
+            
+            let newStream;
+            try {
+              // Attempt standard constraints first
+              newStream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: { ideal: mode }, width: { ideal: 1280 }, height: { ideal: 720 } },
+                audio: false
+              });
+            } catch (constraintErr) {
+              // Fallback to minimal video constraints for Mac desktops / FaceTime HD cameras
+              console.warn("FacingMode constraint failed, falling back to basic video requirement:", constraintErr);
+              newStream = await navigator.mediaDevices.getUserMedia({
+                video: true,
+                audio: false
+              });
+            }
+
+            setStream(newStream);
+            if (videoRef.current) {
+              videoRef.current.srcObject = newStream;
+            }
+          } catch (err) {
+            console.error("Webcam access error:", err);
+            setCameraError("Camera feed unavailable or permission denied.");
+          }
+        };
+
+        const stopCamera = () => {
+          if (stream) {
+            stream.getTracks().forEach(t => t.stop());
+            setStream(null);
+          }
+        };
+
+        const handleFallbackFileUpload = (e) => {
+          const file = e.target.files?.[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = () => {
+            const dataUrl = reader.result;
+            const base64 = dataUrl.split(',')[1];
+            onCapture({
+              base64,
+              mimeType: file.type || 'image/jpeg',
+              dataUrl
+            });
+            stopCamera();
+            onClose();
+          };
+          reader.readAsDataURL(file);
+        };
+
+        const takeSnapshot = () => {
+          if (!videoRef.current) return;
+          const video = videoRef.current;
+          const canvas = canvasRef.current || document.createElement('canvas');
+          canvas.width = video.videoWidth || 640;
+          canvas.height = video.videoHeight || 480;
+          const ctx = canvas.getContext('2d');
+          
+          if (facingMode === 'user') {
+            ctx.translate(canvas.width, 0);
+            ctx.scale(-1, 1);
+          }
+          
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+          const base64 = dataUrl.split(',')[1];
+          onCapture({
+            base64,
+            mimeType: 'image/jpeg',
+            dataUrl
+          });
+          stopCamera();
+          onClose();
+        };
+
+        const toggleFacingMode = () => {
+          setFacingMode(prev => prev === 'user' ? 'environment' : 'user');
+        };
+
+        if (!isOpen) return null;
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+            <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg p-5 shadow-2xl relative text-slate-100 flex flex-col items-center">
+              <button 
+                onClick={() => { stopCamera(); onClose(); }}
+                className="absolute top-4 right-4 text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition z-10"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+
+              <div className="flex items-center space-x-2.5 w-full mb-3">
+                <div className="w-9 h-9 rounded-xl bg-pink-500/20 border border-pink-500/40 text-pink-400 flex items-center justify-center">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h0.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">Camera Snapshot</h3>
+                  <p className="text-xs text-slate-400">Capture a live selfie or scene to transform into anime</p>
+                </div>
+              </div>
+
+              {cameraError ? (
+                <div className="w-full bg-slate-950 border border-slate-800 rounded-xl p-5 my-2 text-center flex flex-col items-center justify-center min-h-[260px]">
+                  <svg className="w-10 h-10 text-pink-400/80 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3l18 18" />
+                  </svg>
+
+                  <p className="text-xs font-bold text-slate-200 mb-2">
+                    Camera feed unavailable or permission blocked on macOS.
+                  </p>
+
+                  <div className="bg-slate-900 border border-slate-800 rounded-lg p-3 mb-4 text-left text-[11px] text-slate-400 space-y-1 w-full max-w-sm">
+                    <p className="text-pink-300 font-semibold mb-1">How to fix on Mac:</p>
+                    <p>• <strong>System level:</strong> Open <strong>System Settings &gt; Privacy &amp; Security &gt; Camera</strong> and enable your browser (Chrome/Safari/Arc).</p>
+                    <p>• <strong>Browser level:</strong> Click the lock or camera icon in your address bar and set Camera to <em>Allow</em>.</p>
+                    <p>• <strong>Sandbox level:</strong> If testing in an embedded iframe preview, direct camera access may be restricted by security policies.</p>
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => startCamera(facingMode)}
+                      className="bg-pink-500 hover:bg-pink-400 text-slate-950 font-semibold text-xs px-3.5 py-2 rounded-xl transition shadow-lg shadow-pink-500/20"
+                    >
+                      Retry Camera
+                    </button>
+
+                    <label className="cursor-pointer bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs px-3.5 py-2 rounded-xl border border-slate-700 transition flex items-center gap-1.5">
+                      <svg className="w-3.5 h-3.5 text-pink-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <span>Upload Photo Instead</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFallbackFileUpload}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                </div>
+              ) : (
+                <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-black border border-slate-800 my-2 shadow-inner flex items-center justify-center">
+                  <video 
+                    ref={videoRef} 
+                    autoPlay 
+                    playsInline 
+                    muted 
+                    className={`w-full h-full object-cover ${facingMode === 'user' ? 'scale-x-[-1]' : ''}`}
+                  />
+                  <canvas ref={canvasRef} className="hidden" />
+                </div>
+              )}
+
+              <div className="flex items-center justify-between w-full mt-3">
+                <button
+                  type="button"
+                  onClick={toggleFacingMode}
+                  className="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl text-xs font-semibold flex items-center space-x-1.5 transition border border-slate-700"
+                >
+                  <svg className="w-4 h-4 text-pink-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  <span>Flip Camera</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={takeSnapshot}
+                  disabled={!stream || !!cameraError}
+                  className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 disabled:opacity-50 text-white font-bold px-5 py-2.5 rounded-xl text-xs flex items-center space-x-2 transition shadow-lg shadow-pink-500/20"
+                >
+                  <div className="w-2.5 h-2.5 rounded-full bg-white animate-pulse"></div>
+                  <span>Take Snapshot</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      function ComparisonSlider({ originalImg, stylizedImg, artworkTitle, artistName }) {
+        const [sliderPos, setSliderPos] = useState(50);
+        const [isDragging, setIsDragging] = useState(false);
+        const containerRef = useRef(null);
+
+        const handleMove = (e) => {
+          if (!containerRef.current) return;
+          const rect = containerRef.current.getBoundingClientRect();
+          const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+          const x = clientX - rect.left;
+          let percent = (x / rect.width) * 100;
+          if (percent < 0) percent = 0;
+          if (percent > 100) percent = 100;
+          setSliderPos(percent);
+        };
+
+        const handleMouseDown = () => setIsDragging(true);
+        const handleMouseUp = () => setIsDragging(false);
+
+        useEffect(() => {
+          if (isDragging) {
+            window.addEventListener('mousemove', handleMove);
+            window.addEventListener('mouseup', handleMouseUp);
+            window.addEventListener('touchmove', handleMove);
+            window.addEventListener('touchend', handleMouseUp);
+          }
+          return () => {
+            window.removeEventListener('mousemove', handleMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+            window.removeEventListener('touchmove', handleMove);
+            window.removeEventListener('touchend', handleMouseUp);
+          };
+        }, [isDragging]);
+
+        return (
+          <div className="relative w-full h-full min-h-[360px] max-h-[600px] rounded-2xl overflow-hidden bg-slate-950 border border-slate-800 shadow-2xl group select-none">
+            <div 
+              ref={containerRef}
+              className="relative w-full h-full cursor-col-resize overflow-hidden flex items-center justify-center"
+              onMouseDown={handleMouseDown}
+              onTouchStart={handleMouseDown}
+              onClick={handleMove}
+            >
+              {/* Stylized Image (Full background) */}
+              <img 
+                src={stylizedImg} 
+                alt="Stylized Anime Masterpiece" 
+                className="absolute inset-0 w-full h-full object-contain pointer-events-none"
+              />
+
+              {/* Original Image (Clipped overlay) */}
+              <div 
+                className="absolute inset-0 overflow-hidden pointer-events-none"
+                style={{ width: `${sliderPos}%` }}
+              >
+                <img 
+                  src={originalImg} 
+                  alt="Original Photo" 
+                  className="absolute top-0 left-0 h-full w-auto max-w-none object-contain"
+                  style={{ width: containerRef.current ? `${containerRef.current.clientWidth}px` : '100%' }}
+                />
+                <div className="absolute top-4 left-4 bg-black/70 backdrop-blur-md px-3 py-1 rounded-full text-xs font-semibold text-white border border-white/20">
+                  Original Photo
+                </div>
+              </div>
+
+              {/* Labels */}
+              <div className="absolute top-4 right-4 bg-pink-500/90 backdrop-blur-md px-3 py-1 rounded-full text-xs font-semibold text-white border border-pink-300/40 shadow-lg pointer-events-none">
+                {artworkTitle}
+              </div>
+
+              {/* Slider Divider Line */}
+              <div 
+                className="absolute top-0 bottom-0 w-1 bg-white shadow-[0_0_12px_rgba(255,255,255,0.8)] z-20 pointer-events-none"
+                style={{ left: `${sliderPos}%` }}
+              >
+                <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-9 h-9 rounded-full bg-white text-slate-900 shadow-xl border-2 border-pink-400 flex items-center justify-center pointer-events-auto cursor-grab active:cursor-grabbing">
+                  <svg className="w-4 h-4 text-slate-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M8 7l-5 5m0 0l5 5m-5-5h18" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            {/* Instruction Banner */}
+            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-slate-900/80 backdrop-blur-md px-4 py-1.5 rounded-full text-[11px] text-slate-300 border border-slate-700/60 pointer-events-none shadow-lg">
+              Drag slider left or right to compare original vs anime transformation
+            </div>
+          </div>
+        );
+      }
+
+      function App() {
+        // State
+        const [selectedArtwork, setSelectedArtwork] = useState(ANIME_STYLES_DATA[0]);
+        const [sourceImage, setSourceImage] = useState(null); // { base64, mimeType, dataUrl }
+        const [customNotes, setCustomNotes] = useState('');
+        
+        // API Key state with localStorage initialization
+        const [apiKey, setApiKey] = useState(() => {
+          return localStorage.getItem('artify_gemini_api_key') || '';
+        });
+        const [isKeyModalOpen, setIsKeyModalOpen] = useState(false);
+        const [isCameraOpen, setIsCameraOpen] = useState(false);
+
+        // Processing & Results
+        const [isProcessing, setIsProcessing] = useState(false);
+        const [processStep, setProcessStep] = useState('');
+        const [resultImage, setResultImage] = useState(null);
+        const [errorMessage, setErrorMessage] = useState(null);
+        const [galleryHistory, setGalleryHistory] = useState([]);
+
+        const fileInputRef = useRef(null);
+
+        // Load initial default sample photo
+        useEffect(() => {
+          loadSamplePhoto(SAMPLE_PHOTOS[0].url);
+        }, []);
+
+        const loadSamplePhoto = async (url) => {
+          try {
+            const data = await imageUrlToBase64(url);
+            setSourceImage(data);
+            setResultImage(null);
+            setErrorMessage(null);
+          } catch (e) {
+            console.error("Error loading sample image:", e);
+          }
+        };
+
+        const handleFileUpload = (e) => {
+          const file = e.target.files?.[0];
+          if (!file) return;
+
+          if (!file.type.startsWith('image/')) {
+            setErrorMessage("Please select a valid image file (JPG, PNG, WEBP).");
+            return;
+          }
+
+          const reader = new FileReader();
+          reader.onload = () => {
+            const dataUrl = reader.result;
+            const base64 = dataUrl.split(',')[1];
+            setSourceImage({
+              base64,
+              mimeType: file.type,
+              dataUrl
+            });
+            setResultImage(null);
+            setErrorMessage(null);
+          };
+          reader.readAsDataURL(file);
+        };
+
+        const handleSaveKey = (newKey) => {
+          setApiKey(newKey);
+          localStorage.setItem('artify_gemini_api_key', newKey);
+          setErrorMessage(null);
+        };
+
+        const handleClearKey = () => {
+          setApiKey('');
+          localStorage.removeItem('artify_gemini_api_key');
+        };
+
+        const handleTransform = async () => {
+          if (!sourceImage) {
+            setErrorMessage("Please select or upload a photo first.");
+            return;
+          }
+
+          setIsProcessing(true);
+          setErrorMessage(null);
+          setProcessStep(`Applying ${selectedArtwork.title} visual style...`);
+
+          try {
+            const stylizedResult = await transformImageWithGemini(
+              sourceImage.base64,
+              sourceImage.mimeType,
+              selectedArtwork,
+              customNotes,
+              apiKey
+            );
+
+            setResultImage(stylizedResult);
+            
+            // Add to session gallery history
+            const newHistoryItem = {
+              id: Date.now(),
+              artworkTitle: selectedArtwork.title,
+              stylized: stylizedResult,
+              timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            };
+            setGalleryHistory(prev => [newHistoryItem, ...prev]);
+
+          } catch (err) {
+            console.error("Transformation Error:", err);
+            setErrorMessage(err.message || "Failed to transform image. Please check your API key and try again.");
+          } finally {
+            setIsProcessing(false);
+          }
+        };
+
+        const handleDownload = () => {
+          if (!resultImage) return;
+          const a = document.createElement('a');
+          a.href = resultImage;
+          a.download = `artify-anime-${selectedArtwork.id}-${Date.now()}.png`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        };
+
+        return (
+          <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100">
+            {/* Top Navigation Bar */}
+            <Header 
+              activeCount={ANIME_STYLES_DATA.length}
+              hasCustomKey={!!apiKey}
+              onOpenKeyModal={() => setIsKeyModalOpen(true)}
+            />
+
+            {/* API Key Modal */}
+            <ApiKeyModal
+              isOpen={isKeyModalOpen}
+              onClose={() => setIsKeyModalOpen(false)}
+              apiKey={apiKey}
+              onSaveKey={handleSaveKey}
+              onClearKey={handleClearKey}
+            />
+
+            {/* Camera Capture Modal */}
+            <CameraModal
+              isOpen={isCameraOpen}
+              onClose={() => setIsCameraOpen(false)}
+              onCapture={(capturedImg) => {
+                setSourceImage(capturedImg);
+                setResultImage(null);
+                setErrorMessage(null);
+              }}
+            />
+
+            {/* Notification Banner for Errors */}
+            {errorMessage && (
+              <div className="bg-rose-900/90 border-b border-rose-700/80 text-rose-100 px-4 py-3 text-center text-sm font-medium flex items-center justify-center space-x-2 z-30">
+                <svg className="w-5 h-5 text-rose-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>{errorMessage}</span>
+                <button 
+                  onClick={() => setIsKeyModalOpen(true)}
+                  className="ml-2 text-pink-300 hover:text-pink-200 underline text-xs font-bold"
+                >
+                  Configure Key
+                </button>
+                <button 
+                  onClick={() => setErrorMessage(null)} 
+                  className="ml-4 text-rose-300 hover:text-white underline text-xs font-bold"
+                >
+                  Dismiss
+                </button>
+              </div>
+            )}
+
+            {/* API Key Alert Banner if key is missing */}
+            {!apiKey && (
+              <div className="bg-pink-950/60 border-b border-pink-500/30 px-4 py-2 text-center text-xs text-pink-200 flex items-center justify-center space-x-2">
+                <span className="w-2 h-2 rounded-full bg-pink-400 animate-pulse"></span>
+                <span>No Gemini API key saved. Please add your API key to transform photos into anime art.</span>
+                <button
+                  onClick={() => setIsKeyModalOpen(true)}
+                  className="bg-pink-500 hover:bg-pink-400 text-slate-950 font-bold px-2.5 py-0.5 rounded-lg text-xs transition ml-2"
+                >
+                  Set Key
+                </button>
+              </div>
+            )}
+
+            {/* Main Content Layout */}
+            <main className="flex-1 max-w-7xl w-full mx-auto px-4 lg:px-8 py-6 grid grid-cols-1 lg:grid-cols-12 gap-8">
+              
+              {/* LEFT COLUMN: Controls, Camera, Upload & Anime Style Selector (6 cols) */}
+              <section className="lg:col-span-6 flex flex-col space-y-6">
+                
+                {/* STEP 1: Upload or Capture Source Image */}
+                <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-xl backdrop-blur-md">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center space-x-2">
+                      <span className="w-6 h-6 rounded-full bg-pink-500 text-slate-950 font-bold text-xs flex items-center justify-center">1</span>
+                      <h2 className="text-sm font-bold text-white uppercase tracking-wider">Select or Capture Photo</h2>
+                    </div>
+                    <span className="text-[11px] text-slate-400">JPG, PNG, WEBP</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+                    {/* Drag & Drop Box */}
+                    <div 
+                      onClick={() => fileInputRef.current?.click()}
+                      className="sm:col-span-2 border-2 border-dashed border-slate-700 hover:border-pink-400/80 bg-slate-950/60 hover:bg-slate-900 rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer transition group min-h-[120px] text-center"
+                    >
+                      <input 
+                        ref={fileInputRef} 
+                        type="file" 
+                        accept="image/*" 
+                        onChange={handleFileUpload} 
+                        className="hidden" 
+                      />
+                      <div className="w-10 h-10 rounded-full bg-slate-800 group-hover:bg-pink-500/20 text-slate-400 group-hover:text-pink-400 flex items-center justify-center mb-2 transition">
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                      <p className="text-xs font-semibold text-slate-200 group-hover:text-pink-300">Click to upload your photo</p>
+                      <p className="text-[11px] text-slate-400 mt-0.5">or drag and drop here</p>
+                    </div>
+
+                    {/* Source Preview Thumbnail */}
+                    <div className="relative rounded-xl border border-slate-800 overflow-hidden bg-slate-950 flex items-center justify-center min-h-[120px]">
+                      {sourceImage ? (
+                        <>
+                          <img src={sourceImage.dataUrl} alt="Source" className="w-full h-full object-cover" />
+                          <div className="absolute bottom-1 right-1 bg-black/70 text-[10px] text-slate-300 px-2 py-0.5 rounded font-mono">
+                            Ready
+                          </div>
+                        </>
+                      ) : (
+                        <span className="text-xs text-slate-500">No image loaded</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Stock Sample Photos & Camera Snapshot Trigger */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-[11px] font-medium text-slate-400">Or use camera / test sample photos:</p>
+                      <button
+                        type="button"
+                        onClick={() => setIsCameraOpen(true)}
+                        className="bg-pink-500/20 hover:bg-pink-500/30 border border-pink-500/40 text-pink-300 px-3 py-1 rounded-xl text-xs font-semibold flex items-center space-x-1.5 transition shadow-sm"
+                      >
+                        <svg className="w-3.5 h-3.5 text-pink-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h0.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        <span>Take Snapshot</span>
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-4 gap-2">
+                      {SAMPLE_PHOTOS.map(sample => (
+                        <button
+                          key={sample.id}
+                          onClick={() => loadSamplePhoto(sample.url)}
+                          className="relative group rounded-lg overflow-hidden border border-slate-800 hover:border-pink-400 transition aspect-video bg-slate-950 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                        >
+                          <img src={sample.url} alt={sample.name} className="w-full h-full object-cover group-hover:scale-110 transition duration-300" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end p-1">
+                            <span className="text-[10px] text-white font-medium truncate">{sample.name}</span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* STEP 2: Choose Japanese Animation Style (5 Preset Styles) */}
+                <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-xl backdrop-blur-md flex-1 flex flex-col">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center space-x-2">
+                      <span className="w-6 h-6 rounded-full bg-pink-500 text-slate-950 font-bold text-xs flex items-center justify-center">2</span>
+                      <h2 className="text-sm font-bold text-white uppercase tracking-wider">Select Japanese Anime Style (5 Styles)</h2>
+                    </div>
+                  </div>
+
+                  {/* 5 Japanese Animation Styles Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 overflow-y-auto max-h-[460px] pr-1 custom-scrollbar">
+                    {ANIME_STYLES_DATA.map(artwork => {
+                      const isSelected = selectedArtwork.id === artwork.id;
+                      return (
+                        <div
+                          key={artwork.id}
+                          onClick={() => setSelectedArtwork(artwork)}
+                          className={`relative rounded-xl border overflow-hidden cursor-pointer transition-all duration-200 flex flex-col ${
+                            isSelected
+                              ? 'border-pink-400 bg-slate-900 ring-2 ring-pink-400/50 shadow-lg scale-[1.01]'
+                              : 'border-slate-800 bg-slate-950/60 hover:border-slate-700 hover:bg-slate-900/80'
+                          }`}
+                        >
+                          {/* Image preview thumbnail */}
+                          <div className="relative h-28 w-full overflow-hidden bg-slate-950">
+                            <img 
+                              src={artwork.previewImg} 
+                              alt={artwork.title} 
+                              className="w-full h-full object-cover"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-80" />
+                            
+                            {/* Selected Badge */}
+                            {isSelected && (
+                              <div className="absolute top-2 right-2 bg-pink-500 text-white rounded-full p-1 shadow-md">
+                                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                </svg>
+                              </div>
+                            )}
+                            <span className="absolute bottom-2 left-2 text-[10px] font-semibold text-pink-300 bg-black/60 px-2 py-0.5 rounded backdrop-blur-sm">
+                              {artwork.movement}
+                            </span>
+                          </div>
+
+                          {/* Card details */}
+                          <div className="p-3 flex-1 flex flex-col justify-between">
+                            <div>
+                              <h3 className="text-xs font-bold text-white line-clamp-1">
+                                {artwork.title}
+                              </h3>
+                              <p className="text-[11px] text-pink-400 font-medium mt-0.5">{artwork.artist}</p>
+                              <p className="text-[10px] text-slate-400 mt-1 line-clamp-2 leading-relaxed">
+                                {artwork.description}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Optional Custom Instructions */}
+                  <div className="mt-4 pt-4 border-t border-slate-800">
+                    <label className="block text-xs font-medium text-slate-300 mb-1">
+                      Optional Style Tweaks / Prompt Notes:
+                    </label>
+                    <input 
+                      type="text"
+                      value={customNotes}
+                      onChange={(e) => setCustomNotes(e.target.value)}
+                      placeholder="e.g. Add cherry blossom petals floating, emphasize vibrant blue sky..."
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-pink-400"
+                    />
+                  </div>
+
+                  {/* Transform Trigger Button */}
+                  <div className="mt-5">
+                    <button
+                      onClick={handleTransform}
+                      disabled={isProcessing || !sourceImage}
+                      className={`w-full py-3.5 px-6 rounded-xl font-bold text-sm transition flex items-center justify-center space-x-2 shadow-lg ${
+                        isProcessing || !sourceImage
+                          ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
+                          : 'bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-600 hover:from-pink-400 hover:to-indigo-500 text-white shadow-pink-500/20 active:scale-[0.99]'
+                      }`}
+                    >
+                      {isProcessing ? (
+                        <>
+                          <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          <span>Transforming Photo to Anime...</span>
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-5 h-5 text-pink-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                          </svg>
+                          <span>Generate {selectedArtwork.title}</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </section>
+
+              {/* RIGHT COLUMN: Interactive Comparison Canvas & Results (6 cols) */}
+              <section className="lg:col-span-6 flex flex-col space-y-6">
+                <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-xl backdrop-blur-md flex-1 flex flex-col justify-between">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h2 className="text-sm font-bold text-white uppercase tracking-wider">Transformation Studio Canvas</h2>
+                      <p className="text-xs text-slate-400">Interactive before/after anime preview</p>
+                    </div>
+                    {resultImage && (
+                      <button
+                        onClick={handleDownload}
+                        className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-3.5 py-1.5 rounded-xl text-xs transition flex items-center space-x-1.5 shadow-md shadow-emerald-500/20"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        <span>Download HD</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Main Display Area */}
+                  <div className="flex-1 flex items-center justify-center min-h-[400px]">
+                    {isProcessing ? (
+                      <div className="flex flex-col items-center justify-center p-8 text-center space-y-4">
+                        <div className="relative w-20 h-20">
+                          <div className="absolute inset-0 rounded-full border-4 border-pink-500/20 animate-ping"></div>
+                          <div className="absolute inset-0 rounded-full border-4 border-t-pink-500 border-r-purple-500 border-b-transparent border-l-transparent animate-spin"></div>
+                          <div className="absolute inset-2 rounded-full bg-slate-900 flex items-center justify-center">
+                            <span className="text-2xl">✨</span>
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-white animate-pulse">{processStep}</p>
+                          <p className="text-xs text-slate-400 mt-1">Generating high quality anime art with Gemini 3.1 Flash Image...</p>
+                        </div>
+                      </div>
+                    ) : resultImage ? (
+                      <ComparisonSlider 
+                        originalImg={sourceImage.dataUrl} 
+                        stylizedImg={resultImage}
+                        artworkTitle={selectedArtwork.title}
+                        artistName={selectedArtwork.artist}
+                      />
+                    ) : sourceImage ? (
+                      <div className="relative w-full h-full min-h-[380px] rounded-2xl overflow-hidden bg-slate-950 border border-slate-800 flex items-center justify-center group">
+                        <img src={sourceImage.dataUrl} alt="Original Preview" className="max-h-[500px] w-auto object-contain" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/30 to-transparent flex flex-col items-center justify-end p-6 text-center">
+                          <p className="text-sm font-bold text-white mb-1">Source Photo Loaded</p>
+                          <p className="text-xs text-slate-300 max-w-md">Click <span className="text-pink-400 font-semibold">"Generate {selectedArtwork.title}"</span> on the left panel to begin transformation.</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="border-2 border-dashed border-slate-800 rounded-2xl p-12 text-center flex flex-col items-center justify-center text-slate-500">
+                        <svg className="w-12 h-12 text-slate-600 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <p className="text-sm font-medium text-slate-300">No Photo Selected</p>
+                        <p className="text-xs text-slate-500 mt-1">Upload a photo or capture a snapshot to see the anime transformation comparison slider.</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Active Selected Style Info Bar */}
+                  <div className="mt-4 p-3 bg-slate-950 border border-slate-800 rounded-xl flex items-center justify-between text-xs">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 rounded-lg overflow-hidden border border-slate-700">
+                        <img src={selectedArtwork.previewImg} alt="Style" className="w-full h-full object-cover" />
+                      </div>
+                      <div>
+                        <p className="font-bold text-white">{selectedArtwork.title}</p>
+                        <p className="text-[10px] text-pink-400">{selectedArtwork.artist}</p>
+                      </div>
+                    </div>
+                    <span className="text-[10px] text-slate-400 font-mono bg-slate-900 px-2 py-1 rounded border border-slate-800">
+                      Model: gemini-3.1-flash-image
+                    </span>
+                  </div>
+                </div>
+
+                {/* Session Gallery History */}
+                {galleryHistory.length > 0 && (
+                  <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-xl backdrop-blur-md">
+                    <h3 className="text-xs font-bold text-white uppercase tracking-wider mb-3">Session Anime Transformations</h3>
+                    <div className="grid grid-cols-3 gap-3 max-h-[160px] overflow-y-auto pr-1 custom-scrollbar">
+                      {galleryHistory.map(item => (
+                        <div 
+                          key={item.id}
+                          onClick={() => setResultImage(item.stylized)}
+                          className="group relative rounded-xl overflow-hidden border border-slate-800 hover:border-pink-400 cursor-pointer aspect-square bg-slate-950"
+                        >
+                          <img src={item.stylized} alt={item.artworkTitle} className="w-full h-full object-cover group-hover:scale-105 transition duration-200" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition p-2 flex flex-col justify-end">
+                            <p className="text-[10px] font-bold text-white line-clamp-1">{item.artworkTitle}</p>
+                            <p className="text-[9px] text-pink-300">{item.timestamp}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </section>
+            </main>
+
+            {/* Footer */}
+            <footer className="border-t border-slate-800/80 bg-slate-950 py-4 px-4 text-center text-xs text-slate-500">
+              <p>Artify AI Studio: Anime Edition — Powered by Google Gemini 3.1 Flash Image model</p>
+            </footer>
+          </div>
+        );
+      }
+
+      const root = ReactDOM.createRoot(document.getElementById('root'));
+      root.render(<App />);
+    </script>
+</body>
+</html>
